@@ -1,0 +1,9 @@
+<automation name="User Update Test" version="11.0.0.0" description="Demonstrates handling a user property change" id="bb8c4cb21def485f84a6284ae9503d94" executeAsServiceUser="false" isSingleton="false" trigger="Event" lastModified="2020-07-10 15:38:42Z">
+	<events>
+		<event key="user.beforeupdate" />
+	</events>
+	<executionScript language="JavaScript"><![CDATA[var existingUser = core_v2_user.Get({ Id: context_v2_automationTrigger.Arguments.Id });
+var oldName = existingUser.DisplayName;
+var newName = context_v2_automationTrigger.Arguments.DisplayName;
+core_v2_eventLog.Write('Updating user display name from ' + oldName + ' to ' + newName);]]></executionScript>
+</automation>

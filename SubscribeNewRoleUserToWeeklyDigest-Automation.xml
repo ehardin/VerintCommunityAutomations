@@ -1,0 +1,12 @@
+<automation name="Subscribe New Role User to Weekly Digest" version="11.0.1.9491" description="" id="50185b5931534eebaf3d080b4cf2df73" executeAsServiceUser="false" trigger="Event" lastModified="2020-04-03 19:12:21Z">
+	<events>
+		<event key="roleuser.aftercreate" />
+	</events>
+	<executionScript language="Velocity"><![CDATA[## $core_v2_exceptions.Log("Adding subscription to weekly digest for user: ${context_v2_automationTrigger.Arguments.Username}", "%{ Type = 'UnknownError' }")
+#if($context_v2_automationTrigger.Arguments.Name == 'Registered Users')
+    $core_v2_widget.ExecuteFile("subscribe.vm", "%{RunAsUserName = $context_v2_automationTrigger.Arguments.Username}")
+#end]]></executionScript>
+	<files>
+		<file name="subscribe.vm"><![CDATA[I3NldCgkZnJlcXVlbmN5ID0gNykKI3NldCgkY29udGV4dCA9ICJncm91cCIpCiNzZXQoJHJvbGVOYW1lID0gIlJlZ2lzdGVyZWQgVXNlcnMiKQoKI3NldCgkZ3JvdXBMaXN0ID0gJGNvcmVfdjJfZ3JvdXAuTGlzdCgiJXtQYWdlSW5kZXggPSAwLCBQYWdlU2l6ZT0xMDB9IikpCiNmb3JlYWNoKCRnIGluICRncm91cExpc3QpCiAgICAjc2V0KCRpc1JvbGVNZW1iZXIgPSBmYWxzZSkKICAgICNzZXQoJGdyb3VwUm9sZSA9ICRjb3JlX3YyX2dyb3VwUm9sZU1lbWJlci5HZXQoJGcuSWQsICIle1JvbGVOYW1lID0gJHJvbGVOYW1lfSIpKQogICAgI2lmKCRncm91cFJvbGUpCiAgICAgICAgI3NldCgkc3Vic2NyaXB0aW9uID0gJGNvcmVfdjJfZW1haWxEaWdlc3QuR2V0QnlHcm91cCgkZy5JZCkpCiAgICAgICAgCiAgICAgICAgI2lmKCRzdWJzY3JpcHRpb24uSWQgPiAwKQogICAgICAgIAkjc2V0KCRzdWIgPSAkY29yZV92Ml9lbWFpbERpZ2VzdC5VcGRhdGUoJHN1YnNjcmlwdGlvbi5JZCwgJGZyZXF1ZW5jeSkpCiAgICAgICAgI2Vsc2UKICAgICAgICAJI3NldCgkc3ViID0gJGNvcmVfdjJfZW1haWxEaWdlc3QuQ3JlYXRlKCRjb250ZXh0LCAkZy5JZCwgJGZyZXF1ZW5jeSkpCiAgICAgICAgI2VuZAogICAgI2VuZAojZW5k]]></file>
+	</files>
+</automation>

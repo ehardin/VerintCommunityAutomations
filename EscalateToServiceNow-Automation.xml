@@ -1,0 +1,92 @@
+<automations>
+	<automations>
+		<automation name="Service Now - Auto Escalate Thread to Case" version="11.0.1.9083" description="" id="94765428af044018a2ead44c7e6ef04e" executeAsServiceUser="true" trigger="Job" schedule="1m" lastModified="2019-10-22 23:58:13Z">
+			<executionScript language="JavaScript"><![CDATA[core_v2_exceptions.Log('Automation: Escalate to Service Now: Starting');
+
+var age = core_v2_widget.GetIntValue('age', 0);
+if(age === 0) 
+{
+    return;
+}
+
+var pageIndex = 0;
+var done = false;
+
+while(!done)
+{
+    var threads = core_v2_forumThread.List(
+        { 
+            PageIndex: pageIndex, 
+            PageSize: 100, 
+            SortBy: 'Date', 
+            SortOrder: 'Descending',
+            IncludeSubGroups: true,
+            GroupId: -1,
+            MaximumReplyCount: 0
+        });
+
+    core_v2_exceptions.Log('Automation: Escalate to Service Now: retrieved threads: ' + threads.Count);
+    if(threads.Count === 0)
+    {
+        core_v2_exceptions.Log('Automation: Escalate to Service Now: No Threads Found');
+    }
+
+    for(var i = 0; i < threads.Count; i++)
+    {
+        //Commented out because it has a date constraint
+        //for testing we want to escalate threads every minute, not after day(s) of time
+        //if(threads[i].Date !== null && (threads[i].Date > (core_v2_utility.CurrentDate + age)) && threads[i].ReplyCount === 0 && threads[i].ExtendedAttributes['IncidentId'] === null)
+        
+        if(threads[i].Date !== null && threads[i].ReplyCount === 0 && threads[i].ExtendedAttributes['IncidentId'] === null)
+        {
+             var serviceNowUser = servicenow_v1_users.GetByEmail(threads[i].Author.Email);
+             var updateData = 
+             { 
+                 OpenedAt: core_v2_utility.CurrentDate,
+                 ShortDescription: threads[i].Subject,
+                 Description: threads[i].Body(),
+                 Urgency: '3',
+                 State: '1',
+                 CallerId: threads[i].Author.PrivateEmail
+             };
+             
+             var newIncident = servicenow_v1_incidents.Create(updateData);
+             
+             var updateThreadData = {};
+             updateThreadData['_ExtendedAttributes_IncidentId'] = newIncident.SysId;
+
+             core_v2_forumThread.Update(threads[i].ForumId, threads[i].Id, updateThreadData)
+             core_v2_exceptions.Log('Automation: Escalate to Service Now: Escalated Thread to Service Now');
+        }
+    }
+    
+    if(threads.TotalCount <= 100 * (pageIndex + 1))
+    {
+        done = true;
+    }
+    
+    pageIndex++;
+}
+
+core_v2_exceptions.Log('Automation: Escalate to Service Now: Finished');]]></executionScript>
+			<configuration><![CDATA[<propertyGroup id="options" labelResourceName="Options">
+    <property id="age" labelResourceName="Age" descriptionResourceName="Age_Description">
+        <propertyRule name="minmax" min="0" />
+    </property>
+</propertyGroup>]]></configuration>
+			<languageResources><![CDATA[<language key="en-us">
+  <resource name="Age">Age (days)</resource>
+  <resource name="Age_Description">Number of days the Forum Thread has existed before being escalated to Service Now.</resource>
+</language>]]></languageResources>
+		</automation>
+	</automations>
+	<configuredAutomations>
+		<configuredAutomation version="11.0.1.9083" id="d6fb157ef3e247a58ac0e8bfb36e0fd9" automationId="94765428af044018a2ead44c7e6ef04e" name="Escalate to Service Now" description="" enabled="true" lastModified="2019-11-06 20:17:26Z">
+			<properties>
+				<property id="age" dataType="String">
+					<value>1</value>
+				</property>
+			</properties>
+		</configuredAutomation>
+	</configuredAutomations>
+</automations>

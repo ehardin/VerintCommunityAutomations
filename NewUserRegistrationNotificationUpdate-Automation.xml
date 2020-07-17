@@ -1,0 +1,9 @@
+<automation name="New User Registration Notification Update" version="11.0.1.9491" description="" id="2d6a35ba7f484d5eaeb09092bbd164ca" executeAsServiceUser="false" trigger="Event" lastModified="2019-11-13 00:57:22Z">
+	<events>
+		<event key="user.aftercreate" />
+	</events>
+	<executionScript language="Velocity"><![CDATA[$core_v2_widget.ExecuteFile("update-notifications.vm", "%{RunAsUserName = $context_v2_automationTrigger.Arguments.Username}")]]></executionScript>
+	<files>
+		<file name="update-notifications.vm"><![CDATA[I3NldCgkdXNlck5vdGlmaWNhdGlvbnMgPSAkY29yZV92Ml9ub3RpZmljYXRpb25Vc2VyUHJlZmVyZW5jZS5MaXN0KCkpCiNmb3JlYWNoKCRwIGluICR1c2VyTm90aWZpY2F0aW9ucy5QcmVmZXJlbmNlcykKICAgICRjb3JlX3YyX25vdGlmaWNhdGlvblVzZXJQcmVmZXJlbmNlLlVwZGF0ZSgkcC5Ob3RpZmljYXRpb25UeXBlSWQsIGZhbHNlLCAiJXtEaXN0cmlidXRpb25UeXBlSWQgPSAkcC5EaXN0cmlidXRpb25UeXBlSWR9IikKI2VuZA==]]></file>
+	</files>
+</automation>

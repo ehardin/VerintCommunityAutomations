@@ -1,0 +1,33 @@
+<automation name="Verint - Unsubscribe Users from Weekly Digest" version="11.0.1.9491" description="Unsubscribe Users from Weekly Digest" id="df372b6fb8e842fea16a75340d0cb48d" executeAsServiceUser="true" trigger="Job" schedule="1m" lastModified="2020-05-07 23:30:03Z">
+	<executionScript language="JavaScript"><![CDATA[/*
+    Description: This automation will run and loop through all users and unsubscribe them from the Weekly Digest for all Groups.
+    Author: Elijah Hardin
+*/
+core_v2_eventLog.Write("START :: Unsubscribe Users From Weekly Digest");
+var pageIndex = 0;
+var done = false;
+while(!done) {
+    var users = core_v2_user.List({
+       SortBy: 'JoinedDate',
+       SortOrder: 'Ascending',
+       PageSize: 100,
+       PageIndex: pageIndex
+    });
+    
+    for(var i = 0; i < users.Count; i++) 
+    {
+        core_v2_widget.ExecuteFile("executor.jsm", { RunAsUserName:users[i].Username });
+    }
+    
+    if(users.TotalCount <= 100 * (pageIndex + 1))
+    {
+        done = true;
+    }
+    
+    pageIndex++;
+}
+core_v2_eventLog.Write("COMPLETE :: Unsubscribe Users From Weekly Digest");]]></executionScript>
+	<files>
+		<file name="executor.jsm"><![CDATA[dmFyIHN1YnNjcmlwdGlvbnMgPSBjb3JlX3YyX2VtYWlsRGlnZXN0Lkxpc3QoMCwgMTAwKTsKCmZvcih2YXIgaSA9IDA7IGkgPCBzdWJzY3JpcHRpb25zLkNvdW50OyBpKyspCnsKICAgIGlmKHN1YnNjcmlwdGlvbnNbaV0uRnJlcXVlbmN5SW5EYXlzID09ICc3JykKICAgIHsKICAgICAgICBjb3JlX3YyX2VtYWlsRGlnZXN0LkRlbGV0ZShzdWJzY3JpcHRpb25zW2ldLklkKTsKICAgIH0KfQ==]]></file>
+	</files>
+</automation>

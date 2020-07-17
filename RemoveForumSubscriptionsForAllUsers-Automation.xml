@@ -1,0 +1,32 @@
+<automation name="Remove Forum Subscriptions For All Users" version="11.0.1.9491" description="Remove Forum Subscriptions For All Users" id="c1057eb4ca0e41efa9789d0d0d84f2a2" executeAsServiceUser="true" trigger="Job" schedule="1m" lastModified="2020-05-07 22:58:44Z">
+	<executionScript language="JavaScript"><![CDATA[/*
+    Description: This automation will run and loop through all users and remove their Forum subscriptions
+    Author: Elijah Hardin
+*/
+var pageIndex = 0;
+var done = false;
+while(!done) {
+    var users = core_v2_user.List({
+       SortBy: 'JoinedDate',
+       SortOrder: 'Ascending',
+       PageSize: 100,
+       PageIndex: pageIndex
+    });
+    
+    for(var i = 0; i < users.Count; i++) 
+    {
+        core_v2_widget.ExecuteFile("ExecuteRemoveSubscriptions.jsm", { RunAsUserName:users[i].Username });
+    }
+    
+    if(users.TotalCount <= 100 * (pageIndex + 1))
+    {
+        done = true;
+    }
+    
+    pageIndex++;
+}
+core_v2_eventLog.Write("COMPLETE :: Remove Forum Subscriptions For All Users");]]></executionScript>
+	<files>
+		<file name="ExecuteRemoveSubscriptions.jsm"><![CDATA[dmFyIGZvcnVtcyA9IGNvcmVfdjJfZm9ydW0uTGlzdCh7IEdyb3VwSWQ6IDEsIEluY2x1ZGVTdWJHcm91cHM6IHRydWUsIFBhZ2VJbmRleDogMCwgUGFnZVNpemU6IDEwMCB9KTsKCmZvcih2YXIgaSA9IDA7IGkgPCBmb3J1bXMuQ291bnQ7IGkrKykKewogICAgY29yZV92Ml9mb3J1bS5TZXRTdWJzY3JpYmVkKGZvcnVtc1tpXS5JZCwgZmFsc2UpCn0=]]></file>
+	</files>
+</automation>

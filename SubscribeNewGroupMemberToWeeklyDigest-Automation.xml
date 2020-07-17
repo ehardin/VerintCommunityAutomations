@@ -1,0 +1,10 @@
+<automation name="Subscribe New Group Member to Weekly Digest" version="11.0.1.9491" description="This subscribes a new group member to the weekly digest." id="bd5c3b0030eb46b8beb49151a7b66c6c" executeAsServiceUser="false" trigger="Event" lastModified="2019-12-05 15:42:26Z">
+	<events>
+		<event key="groupuser.aftercreate" />
+	</events>
+	<executionScript language="Velocity"><![CDATA[$core_v2_exceptions.Log("Adding subscription to weekly digest for user: ${context_v2_automationTrigger.Arguments.User.Username}", "%{ Type = 'UnknownError' }")
+$core_v2_widget.ExecuteFile("subscribe.vm", "%{RunAsUserName = $context_v2_automationTrigger.Arguments.User.Username}")]]></executionScript>
+	<files>
+		<file name="subscribe.vm"><![CDATA[I3NldCgkZnJlcXVlbmN5ID0gNykKI3NldCgkY29udGV4dElkID0gJGNvbnRleHRfdjJfYXV0b21hdGlvblRyaWdnZXIuQXJndW1lbnRzLkdyb3VwLklkKQojc2V0KCRjb250ZXh0ID0gImdyb3VwIikKI3NldCgkc3Vic2NyaXB0aW9uID0gJGNvcmVfdjJfZW1haWxEaWdlc3QuR2V0QnlHcm91cCgkY29udGV4dF92Ml9hdXRvbWF0aW9uVHJpZ2dlci5Bcmd1bWVudHMuR3JvdXAuSWQpKQoKI2lmKCRzdWJzY3JpcHRpb24uSWQgPiAwKQoJI3NldCgkc3ViID0gJGNvcmVfdjJfZW1haWxEaWdlc3QuVXBkYXRlKCRzdWJzY3JpcHRpb24uSWQsICRmcmVxdWVuY3kpKQojZWxzZQoJI3NldCgkc3ViID0gJGNvcmVfdjJfZW1haWxEaWdlc3QuQ3JlYXRlKCRjb250ZXh0LCAkY29udGV4dElkLCAkZnJlcXVlbmN5KSkKI2VuZA==]]></file>
+	</files>
+</automation>

@@ -1,0 +1,192 @@
+<automations>
+	<automations>
+		<automation name="${resource:Title}" version="11.1.2.11315" description="${resource:Description}" id="58d484176d0641439da71de5a9e11d5d" executeAsServiceUser="true" isSingleton="false" trigger="Event" lastModified="2020-01-21 19:56:49Z">
+			<events>
+				<event key="content.aftercreate" />
+			</events>
+			<executionScript language="JavaScript"><![CDATA[if (!context_v2_automationTrigger.Arguments.IsEnabled)
+    return;
+
+var contentTypeWhitelist = [
+    core_v2_forumThread.ContentTypeId,
+    core_v2_forumReply.ContentTypeId,
+    core_v2_comments.ContentTypeId,
+    core_v2_blog.ContentTypeId,
+    core_v2_wikiPage.ContentTypeId,
+    //core_v2_statusMessage.ContentTypeId, /* todo: why no url? */
+    //core_v2_user.ContentTypeId,
+    telligentIdeas_v1_ideas.ContentTypeId
+]
+
+if (contentTypeWhitelist.indexOf(context_v2_automationTrigger.Arguments.ContentTypeId) == -1) {
+    //core_v2_exceptions.Log('not supported')
+    return;
+}
+
+var terms = (core_v2_widget.GetStringValue('terms', '') || '').trim();
+if (terms.length == 0)
+    return;
+
+var roleIdsToNotify = core_v2_page.ParseQueryString(core_v2_widget.GetCustomValue('roles', '') || '').Values('Role');
+if (!roleIdsToNotify || roleIdsToNotify.Count == 0)
+    return; 
+
+var match, i;
+var termsList = terms.split(',').filter(function(value, index, arr){
+	return value.trim() !== '';
+});
+var contentBody = context_v2_automationTrigger.Arguments.HtmlDescription('raw');
+var contentTitle = context_v2_automationTrigger.Arguments.HtmlName('raw');
+
+for (var i = 0; i < termsList.length; i++) {
+    if (containsTerm(contentBody, termsList[i])) {
+        match = {
+        	fieldName: 'Body',
+        	term : termsList[i]
+        };
+        break;
+    }
+    else if (!shouldSkipTitleCheck(context_v2_automationTrigger.Arguments.ContentTypeId) && containsTerm(contentTitle, termsList[i])) {
+        match = {
+        	fieldName: 'Title',
+        	term : termsList[i]
+        };
+        break;
+    }
+}
+
+if (match == null)
+    return;
+
+var usersToEmail = getUsersToNotify(roleIdsToNotify);
+notifyUsers(context_v2_automationTrigger.Arguments.ContentTypeId, contentTitle, 
+            core_v2_encoding.HtmlEncode(context_v2_automationTrigger.Arguments.Url || ''), match, usersToEmail);
+
+//Get all users and remove any users that exist in multiple roles identified
+function getUsersToNotify(rolesIdsToNotify) {
+    var usersToNotify = [], includedUsers = {};
+    
+    if (!roleIdsToNotify || roleIdsToNotify.Count == 0)
+        return usersToNotify;
+        
+    for (var i = 0; i < rolesIdsToNotify.Count; i++) {
+        var role = core_v2_role.Get(parseInt(rolesIdsToNotify[i], 10));
+	    if (role != null) {
+	        var roleMembers = core_v2_user.List({ PageSize: 100, RoleId: parseInt(rolesIdsToNotify[i]) /*, SortBy: 'JoinedDate', SortOrder: 'Ascenting',*/ });
+            for (var k = 0; k < roleMembers.Count; k++) {
+            	if (!includedUsers[roleMembers[k].Id]) {
+	               usersToNotify.push(roleMembers[k].Id);
+	               includedUsers[roleMembers[k].Id] = true;
+               }
+            }
+	    }
+    }
+    return usersToNotify;
+}
+
+function notifyUsers(contentTypeId, title, url, matchFound, usersToNotify) {
+    if (usersToNotify != null && usersToNotify.length > 0) {
+        var contentType = core_v2_contentType.Get(contentTypeId);
+        var typeName = (contentType == null || contentType.Errors.Count > 0) ? 'N/A' : contentType.Name;
+        var linkedTitle = '<a href=\"' + url + "\">" + (title == null ? title : typeName) + '</a>';
+        
+        var tokens = { 
+        	contentTitle: linkedTitle, 
+        	contentType: typeName, 
+        	term: matchFound.term 
+        };
+        var subject = core_v2_language.FormatString(core_v2_widget.GetStringValue('subject', ''), tokens);
+        var body = core_v2_language.FormatString(core_v2_widget.GetHtmlValue('body', ''), tokens);
+
+        if (!body || body.length == 0) 
+            return;
+
+        for (var i = 0; i < usersToNotify.length; i++) {
+            core_v2_email.Send(subject, body, { ToUserId: usersToNotify[i] });
+        }
+    }
+}
+
+function containsTerm(str, term) {
+	term = term.trim();
+    if (str === null || str.length == 0 || term.length === 0)
+        return false;
+    
+    var strippedTerm = term, trailingWildcard = '', leadingWildcard = '';
+    
+    if (endsWith(term, '*')) {
+        strippedTerm = term.slice(0, -1);
+        trailingWildcard = '[\\S]*';
+    }
+    
+    if (term.charAt(0) == '*') {
+        strippedTerm = strippedTerm.substr(1);
+        leadingWildcard = '[\\S]*';
+    }
+    return str.match(new RegExp('\\b' + leadingWildcard + escapeRegExp(strippedTerm) + trailingWildcard + '\\b', 'i')) != null;
+}
+
+function escapeRegExp(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function shouldSkipTitleCheck(contentTypeId) {
+    //skip title checks on comment and replies since they match the original title of the parent
+    return (contentTypeId === core_v2_forumReply.ContentTypeId || contentTypeId === core_v2_comments.ContentTypeId);
+}
+
+function endsWith(term, suffix) {
+    return term.indexOf(suffix, term.length - suffix.length) !== -1;
+};]]></executionScript>
+			<configuration><![CDATA[<propertyGroup id="options" labelResourceName="Options">
+    <property id="terms" dataType="string" labelResourceName="Terms" descriptionResourceName="Terms_Description"/>
+    <property id="roles" dataType="custom" labelResourceName="Roles" descriptionResourceName="Roles_Description" template="core_v2_roleLookup" maxSelections="20" />
+    <property id="subject" dataType="string" labelResourceName="Subject" defaultValue="The term '{term}' was mentioned in a {contentType} (Automation:Term Mentioned)" descriptionResourceName="Subject_Description" template="core_v2_customTokenizedString">
+        <propertyValue value="term" labelResourceName="Token_TermMentioned" />
+        <propertyValue value="contentType" labelResourceName="Token_ContentType" />
+    </property>
+    <property id="body" dataType="html" labelResourceName="Body" defaultValue="&lt;p&gt;Term:&amp;nbsp;{term}&lt;/p&gt;&lt;p&gt;Title: {contentTitle}&lt;/a&gt;&lt;/p&gt;" descriptionResourceName="Body_Description" template="core_v2_customTokenizedHtml" rows="15" columns="40">
+        <propertyValue value="term" labelResourceName="Token_TermMentioned" />
+        <propertyValue value="contentTitle" labelResourceName="Token_ContentTitle" />
+    </property>
+</propertyGroup>]]></configuration>
+			<languageResources><![CDATA[<language key="en-us">
+  <resource name="Body">Message Body</resource>
+  <resource name="Body_Description">The body of the message sent to members when a term is mentioned.</resource>
+  <resource name="Description">Sends an email when a term is mentioned in content.</resource>
+  <resource name="Options">Options</resource>
+  <resource name="Roles">Roles</resource>
+  <resource name="Roles_Description">Select one or more roles to recieve the email. If no roles are selected, an email will not be sent.</resource>
+  <resource name="Subject">Subject</resource>
+  <resource name="Subject_Description">The subject of the notification sent to members when added to a role.</resource>
+  <resource name="Terms">Terms</resource>
+  <resource name="Terms_Description">Comma seperated list of terms to look for (ex. emergency,escalat*). Leading and trailing wildcards are supported. Matches are not case sensitive.</resource>
+  <resource name="Title">Email role members when a term is mentioned</resource>
+  <resource name="Token_ContentTitle">Content Title</resource>
+  <resource name="Token_ContentType">Content Type</resource>
+  <resource name="Token_ContentUrl">Url</resource>
+  <resource name="Token_TermMentioned">Term Mentioned</resource>
+  <resource name="Token_UserDisplayName">Member Display Name</resource>
+</language>]]></languageResources>
+		</automation>
+	</automations>
+	<configuredAutomations>
+		<configuredAutomation version="11.1.2.11315" id="3b166d2ef4604ccca3d6789e5e477fbf" automationId="58d484176d0641439da71de5a9e11d5d" name="Negative Term Lookout " description="&lt;p&gt;Emails users in the 'Term Watchers' role when specified terms are mentioned&lt;/p&gt;" enabled="true" lastModified="2020-01-13 20:44:56Z">
+			<properties>
+				<property id="terms" dataType="String">
+					<value>bad,terrible,jive,discourse,horrible,annoying,complain*,broke*,ugh</value>
+				</property>
+				<property id="roles" dataType="Custom">
+					<value>Role=6252</value>
+				</property>
+				<property id="subject" dataType="String">
+					<value>The term '{term}' was mentioned in a {contentType} (Automation:Term Mentioned)</value>
+				</property>
+				<property id="body" dataType="Html">
+					<value>&lt;p&gt;Term: {term}&lt;/p&gt;
+&lt;p&gt;Title: {contentTitle}&lt;/p&gt;</value>
+				</property>
+			</properties>
+		</configuredAutomation>
+	</configuredAutomations>
+</automations>
